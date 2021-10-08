@@ -5,10 +5,11 @@
 package ga
 
 import (
-	"Bl/core"
 	"math"
 	"sort"
 	"sync"
+
+	"github.com/jocum/bl/core"
 
 	"github.com/shopspring/decimal"
 )

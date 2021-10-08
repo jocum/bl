@@ -1,4 +1,4 @@
-module Bl
+module github.com/jocum/bl
 
 go 1.17
 
