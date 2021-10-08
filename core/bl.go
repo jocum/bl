@@ -47,7 +47,7 @@ func (bl *Bl) Clone() *Bl {
 		UseRects: make(Rects, 0),
 	}
 	for _, v := range bl.Rects {
-		newB.Rects = append(newB.Rects, NewDefaultRect(v.GetW(), v.GetH(), v.GetId()))
+		newB.Rects = append(newB.Rects, v.Copy())
 	}
 	newB.UseRects = newB.Rects
 	return newB

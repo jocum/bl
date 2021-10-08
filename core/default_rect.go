@@ -23,6 +23,16 @@ func NewDefaultRect(w, h, id int) *DefaultRect {
 	}
 }
 
+func (dr *DefaultRect) Copy() Rect {
+	return &DefaultRect{
+		Id:    dr.Id,
+		W:     dr.W,
+		H:     dr.H,
+		Point: &Point{0, 0},
+		Area:  dr.Area,
+	}
+}
+
 func (dr *DefaultRect) GetId() int {
 	return dr.Id
 }

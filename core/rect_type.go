@@ -49,6 +49,10 @@ type Rect interface {
 		@description 获取矩形的右垂直线
 	*/
 	GetRightVertical() VLine
+	/*
+		@description 复制一个自己要求不同的内存地址 不是表面复制
+	*/
+	Copy() Rect
 }
 
 type Rects []Rect
