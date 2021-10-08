@@ -1,10 +1,15 @@
 package core
 
-// 箱子
+/*
+	@Description  箱子
+			矩阵装箱 主要逻辑这里完成
+	@Author cwy
+*/
 
 import (
-	"fmt"
 	"sort"
+
+	"github.com/shopspring/decimal"
 )
 
 // 箱子主体
@@ -12,10 +17,13 @@ type Box struct {
 	Width       int     //	箱子宽度
 	Height      int     //	箱子高度
 	Rects       []Rect  //	已入箱
-	Next        []Rect  //  实际能入箱但目前装不下
-	Horizontals []HLine // 	水平线合集？合集  每个物品装箱后保留顶点在这个位置方便后续判断
-	Verticals   []VLine // 	垂直线集合？ 每个物品装箱完成后将垂直线坐标保留在这个位置
-	Parent      *Bl     `json:"-"` //	父级地址
+	Next        []Rect  `json:"-"` //  实际能入箱但目前装不下
+	horizontals []HLine // 	水平线合集？合集  每个物品装箱后保留顶点在这个位置方便后续判断
+	verticals   []VLine // 	垂直线集合？ 每个物品装箱完成后将垂直线坐标保留在这个位置
+	UseH        int     //  使用了多少高度
+	UseAera     int     //  使用的面积总和
+	Rate        float64 //  面积使用率
+	parent      *Bl     `json:"-"` //	父级地址
 }
 
 // 初始化箱子
@@ -23,25 +31,34 @@ func NewBox(w, h int, bl *Bl) *Box {
 	return &Box{
 		Width:       w,
 		Height:      h,
-		Parent:      bl,
-		Horizontals: make([]HLine, 0),
-		Verticals:   make([]VLine, 0),
+		parent:      bl,
+		horizontals: make([]HLine, 0),
+		verticals:   make([]VLine, 0),
 		Rects:       make([]Rect, 0),
 	}
 }
 
 // 水平线排序 按y坐标
 func (b *Box) HSort() {
-	sort.Slice(b.Horizontals, func(i, j int) bool {
-		return b.Horizontals[i].Right.Y > b.Horizontals[j].Right.Y
+	sort.Slice(b.horizontals, func(i, j int) bool {
+		return b.horizontals[i].Right.Y > b.horizontals[j].Right.Y
 	})
 }
 
 // 垂直线排序 按x坐标
 func (b *Box) VSort() {
-	sort.Slice(b.Verticals, func(i, j int) bool {
-		return b.Verticals[i].Down.X > b.Verticals[j].Down.X
+	sort.Slice(b.verticals, func(i, j int) bool {
+		return b.verticals[i].Down.X > b.verticals[j].Down.X
 	})
+}
+
+/*
+	@description 计算面积使用率
+*/
+func (b *Box) CountRate() {
+	userArea := decimal.NewFromInt(int64(b.UseAera))
+	bgArea := decimal.NewFromInt(int64(b.UseH * b.Width))
+	b.Rate, _ = userArea.Div(bgArea).Float64()
 }
 
 /*
@@ -111,7 +128,10 @@ func (b *Box) getMoveY(rect Rect) int {
 	// 对水平线按y坐标从高到低排序
 	b.HSort()
 	// 循环水平线
-	for _, horizontal := range b.Horizontals {
+	for _, horizontal := range b.horizontals {
+		if horizontal.Left.Y > (rect.GetPoint().Y - rect.GetH()) {
+			continue
+		}
 		y, isIntersect := horizontalLineIntersection(rect.GetUpHorizontal(), horizontal)
 		if isIntersect {
 			yy = y
@@ -142,8 +162,11 @@ func (b *Box) getMoveX(rect Rect) int {
 	// 对垂直线按x从大道小排序
 	b.VSort()
 	// 循环垂直线对比是否会相交
-	for _, vertical := range b.Verticals {
-		fmt.Printf("left vertical %+v \n", rect.GetLeftVertical())
+	for _, vertical := range b.verticals {
+		// 不考虑再后面的线 只考虑前面的
+		if vertical.Up.X > (rect.GetPoint().X - rect.GetW()) {
+			continue
+		}
 		x, isIntersect := verticalLineIntersection(rect.GetLeftVertical(), vertical)
 		if isIntersect {
 			xx = x
@@ -189,14 +212,20 @@ func (b *Box) Exprot(rect Rect) bool {
 	@description 矩形进入箱体初期判断在矩形不动的情况下是否还空间容纳矩形
 */
 func (b *Box) Check(rect Rect) bool {
-	// 先判断是否还能容下这个矩形
-	for _, v := range b.Horizontals {
+	// 先判断 宽高是否超标
+	if b.Width < rect.GetW() {
+		return false
+	}
+	if b.Height < rect.GetH() {
+		return false
+	}
+	for _, v := range b.horizontals {
 		x, isIntersect := horizontalLineIntersection(rect.GetUpHorizontal(), v)
 		if x < 0 && isIntersect {
 			return false
 		}
 	}
-	for _, v := range b.Verticals {
+	for _, v := range b.verticals {
 		y, isIntersect := verticalLineIntersection(rect.GetLeftVertical(), v)
 		if y < 0 && isIntersect {
 			return false
@@ -212,7 +241,7 @@ func (b *Box) Check(rect Rect) bool {
 func (b *Box) GetInto(rect Rect) {
 	// 先判断是否能进入到箱体
 	if b.Exprot(rect) {
-		b.Parent.Export = append(b.Parent.Export, rect)
+		b.parent.Export = append(b.parent.Export, rect)
 		return
 	}
 	// 矩阵入箱 默认坐标为箱子的右顶点
@@ -240,8 +269,14 @@ func (b *Box) GetInto(rect Rect) {
 			break
 		}
 	}
+	// 记录最高的y坐标
+	if b.UseH < rect.GetPoint().Y {
+		b.UseH = rect.GetPoint().Y
+	}
 	// 入库完成 添加入已入库数据组
 	b.Rects = append(b.Rects, rect)
-	b.Horizontals = append(b.Horizontals, rect.GetDownHorizontal())
-	b.Verticals = append(b.Verticals, rect.GetRightVertical())
+	// 记录矩阵总面积
+	b.UseAera += rect.GetArea()
+	b.horizontals = append(b.horizontals, rect.GetDownHorizontal())
+	b.verticals = append(b.verticals, rect.GetRightVertical())
 }

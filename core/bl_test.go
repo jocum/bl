@@ -7,7 +7,7 @@ import (
 
 func TestHSort(t *testing.T) {
 	box := &Box{
-		Horizontals: []HLine{
+		horizontals: []HLine{
 			{Left: Point{X: 0, Y: 30}, Right: Point{X: 30, Y: 30}},
 			{Left: Point{X: 100, Y: 100}, Right: Point{X: 130, Y: 100}},
 			{Left: Point{X: 0, Y: 50}, Right: Point{X: 30, Y: 50}},
@@ -46,11 +46,13 @@ func TestPacking(t *testing.T) {
 		{"num": 1, "w": 79, "h": 105},
 	}
 	rects := make([]Rect, 0)
+	id := 1
 	for _, v := range d {
 		num := v["num"]
 		for i := 0; i < num; i++ {
-			tmp := NewDefaultRect(v["w"], v["h"])
+			tmp := NewDefaultRect(v["w"], v["h"], id)
 			rects = append(rects, tmp)
+			id++
 		}
 	}
 	bl := NewBl(1650, 2400, rects)

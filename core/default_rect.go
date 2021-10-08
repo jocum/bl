@@ -1,7 +1,11 @@
 package core
 
-// 这里实现一个默认矩形
+/*
+	@Description  这里实现一个默认矩形
+			实现一个默认矩形参数提供参考
+*/
 type DefaultRect struct {
+	Id       int    //  标识
 	W        int    //	宽
 	H        int    //	高
 	Point    *Point //	右顶点坐标
@@ -9,13 +13,18 @@ type DefaultRect struct {
 	IsRotate bool   //	是否90度旋转
 }
 
-func NewDefaultRect(w, h int) *DefaultRect {
+func NewDefaultRect(w, h, id int) *DefaultRect {
 	return &DefaultRect{
+		Id:    id,
 		W:     w,
 		H:     h,
 		Point: &Point{0, 0},
 		Area:  w * h,
 	}
+}
+
+func (dr *DefaultRect) GetId() int {
+	return dr.Id
 }
 
 // 返回高

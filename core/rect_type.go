@@ -1,7 +1,15 @@
 package core
 
-// 入箱的个体矩形定义
+/*
+	@Description 规范一个矩形 每一个装箱的矩形拥有这些方法
+		所有实现该定义的都可以认定为可装箱矩形。具体内部结构和其他处理可根据自身自由操作
+*/
+
 type Rect interface {
+	/*
+		@description 获取唯一id 代表这个矩形
+	*/
+	GetId() (id int)
 	/*
 		@description 入箱矩形需要能获取到宽高 返回矩形的宽高数据
 	*/
@@ -42,3 +50,5 @@ type Rect interface {
 	*/
 	GetRightVertical() VLine
 }
+
+type Rects []Rect
